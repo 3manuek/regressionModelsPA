@@ -3,6 +3,7 @@ title: "Regression Models Peer Assessment"
 author: "Emanuel Calvo"
 date: "November 21, 2015"
 output: pdf_document
+keep_md: true
 # output: html_document
 ---
 
