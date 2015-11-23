@@ -25,8 +25,8 @@ Your report must be:
 
 The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). This dataset is included in the `datasets` library.
 
+From the research done in the current document, we are in place to confirm that the manual transmission in average is better for the consupmtion. However, this trend could be reverted with transmissions with 4 gears.  
 
-    
 ## Exploratory data analysis
 
 ```{r, echo =FALSE, message = FALSE}
@@ -68,9 +68,16 @@ g <- putPlot(g, plot, 1, 2)
 g
 ```
 
+Raw model:
+
 ```{r}
-Model <- lm(mpg ~ ., data=mtcars)
+Model <- lm(mpg ~ ., data=mtcars) # Hidden output.
+summary(Model)   
 ```
+
+### Some indicators
+
+There is a clear relationship between the performance over Miles per Galon with the weight of the car. Also, weighter cars needs more cylinders, which clearly affects the consumption per mile. 
 
 ```{r}
 g2 <- ggplot2::ggplot(mtcars, ggplot2::aes(x=wt, y=mpg, label=rownames(mtcars))) +
@@ -81,37 +88,79 @@ g2
 ```
 
 
-```{r}
-pairs(mtcars, main = "mtcars data")
-coplot(mpg ~ disp | as.factor(cyl), data = mtcars,
-        panel = panel.smooth, rows = 1)
-```
-
-
 ## How the transmission system affects the Miles/(US) gallon
 
 Automatic trassmission with low gears (3) have a bad performance comparing with 4 gears in manual transmission. However, the tendency shows that manual transmissions with higher gears have more variablity and worser performance.
 
 Also, new automatic systems with 4 gears, have a better performance in consume with higher gears.
 
-```{r}
-# spm(~ hp + cyl | mpg,data = mtcars)
 
-coplot(mpg ~ amS | as.factor(cyl), data = mtcars,
+```{r}
+coplot(mpg ~ wt | amS, data = mtcars,
         panel = panel.smooth, rows = 1)
 ```
 
 
 ```{r}
-coplot(mpg ~ gear | amS, data = mtcars,
-        panel = panel.smooth, rows = 1)
-```
-
-
-```{r}
-spm(~ mpg + round(gear) | amS,data = mtcars,smoother=FALSE)
-
+spm(~ mpg + wt + cyl | amS,data = mtcars,smoother=FALSE)
 ```
 
 ## Quantifying the MPG difference between automatic and manual transmissions
+
+As first approach, the following code fits a simple model using the transmission as the predictor and the Miles per galon as the outcome.
+
+```{r}
+transModel <- lm(mpg ~ amS, data=mtcars)
+
+par(mfrow = c(2,2))
+plot(transModel)
+
+transModelSum <- summary(transModel)
+```
+
+On average, a car with automatic transmission has `r transModel$coefficients[1]`mpg, for manual transmission cars the average is `r round(transModel$coefficients[1]+ transModel$coefficients[2])` mpg, with an increase of `r transModel$coefficients[2]` mpg.
+
+However, the adjusted R-squared value shows that this model explain only the `r round( transModelSum$adj.r.squared * 100)` % of the variation on the Miles per Galon.
+
+
+Found a better model:
+
+```{r}
+expModel <- lm(mpg ~ wt +  qsec  + am +  wt:am, data=mtcars) 
+sumExpModel <- summary(expModel)
+sumExpModel
+```
+
+This model explains the `r round(sumExpModel$adj.r.squared * 100) ` of the variance of the Miles per Galon. 
+
+
+### Model proposed to quantify the difference betwen Miles per galon and transmission
+
+We compare both models (simple linear regression using mpg and transmission system and a custom model described here) using the following functions and code:
+
+```{r}
+anova(transModel,expModel)
+anovaModels <- anova(transModel,expModel)
+summary(expModel)$coef
+```
+
+The best fit model we found is within the formula "mpg ~ wt + qsec + ams + wt:am".
+
+
+### Residuals for the selected multivariate model 
+
+```{r}
+par(mfrow = c(2,2))
+plot(expModel)
+```
+
+From the graph above and details collected we canmake the following assumptions:
+
+1. Reisudals vs Fitted does not show any visible pattern.
+2. The normal Q-Q shows that the resduals are nornally distributed.
+3. The Scale-Location confirm that the points are randomly distributed and that there is a constant variance.
+4. The Residuals vs Leverage shows that there are no significant outliers on the population, as the values are within the 0.5 range.
+
+As for the DfBetas (measure on effect over an observation  by the estimation of a regression coefficient), we obtain `r sum((abs(dfbetas(expModel)))>1)` which means that our model is a good fit for this population. 
+
 
