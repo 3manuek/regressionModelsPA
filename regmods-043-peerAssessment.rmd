@@ -2,8 +2,8 @@
 title: "Regression Models Peer Assessment"
 author: "Emanuel Calvo"
 date: "November 21, 2015"
-# output: pdf_document
-output: html_document
+output: pdf_document
+# output: html_document
 ---
 
 ## Context
@@ -23,9 +23,9 @@ Your report must be:
 
 ## Executive Summary
 
-### Dataset description 
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). This dataset is included in the `datasets` library.
 
-The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models).
+
     
 ## Exploratory data analysis
 
@@ -41,7 +41,10 @@ data("mtcars")
 mpg <- mtcars$mpg
 am <- mtcars$am
 amS <- revalue(factor(mtcars$am), c("1"="Manual", "0"="Automatic"))
+ttest <- t.test(mpg ~ am)
 ```
+
+We can observ that the transmission systems come from different populations, as the p-value over a t-test give us `r ttest$p.value` between Miles per Galon and Transmissions. Also the mean of each group has `r abs(ttest$estimate[1] - ttest$estimate[2])` of difference.
 
 
 All the correlations against mpg:
@@ -51,38 +54,30 @@ cor(mtcars)[1,]
 ```
 
 
-Correlations:
+Let's consider the following figure with the correlations among a selected set of columns from the dataset:
 
-```{r}
-cor(mpg,am)
-
-scatterplotMatrix(~ income + education + prestige | type, data=Duncan)
-scatterplotMatrix(~ income + education + prestige, 
-    transform=TRUE, data=Duncan, smoother=loessLine)
-scatterplotMatrix(~ income + education + prestige | type, smoother=FALSE, 
-	by.group=TRUE, transform=TRUE, data=Duncan)
-
-spm(~ round(hp) + cyl | round(mpg),data = mtcars)
-
-```
 
 ```{r, cache=TRUE}
-g <- ggpairs(mtcars[,c("mpg","hp","cyl","am", "gear","carb","wt")], title = "Correlations" )
+g <- ggpairs(mtcars[,c("mpg","cyl","am", "gear","wt")], title = "Correlations" )
   plot <- ggplot2::ggplot(mtcars, ggplot2::aes(x=wt, y=mpg, label=rownames(mtcars)))
   plot <- plot +
     ggplot2::geom_text(ggplot2::aes(colour=factor(cyl)), size = 3) +
     ggplot2::scale_colour_discrete(l=40)
 g <- putPlot(g, plot, 1, 2)
 
+g
+```
+
+```{r}
+Model <- lm(mpg ~ ., data=mtcars)
+```
+
+```{r}
 g2 <- ggplot2::ggplot(mtcars, ggplot2::aes(x=wt, y=mpg, label=rownames(mtcars))) +
       ggplot2::geom_text(ggplot2::aes(colour=factor(cyl)), size = 3) +
       ggplot2::scale_colour_discrete(l=40)
 g2
 
-g3 <- ggplot2::ggplot(mtcars, ggplot2::aes(x=mpg, y=am, label=rownames(mtcars))) +
-      ggplot2::geom_text(ggplot2::aes(colour=factor(cyl)), size = 3) +
-      ggplot2::scale_colour_discrete(l=40)
-g3
 ```
 
 
@@ -99,22 +94,24 @@ Automatic trassmission with low gears (3) have a bad performance comparing with 
 
 Also, new automatic systems with 4 gears, have a better performance in consume with higher gears.
 
-
 ```{r}
-spm(~ hp + cyl | mpg,data = mtcars)
-```
+# spm(~ hp + cyl | mpg,data = mtcars)
 
-```{r}
 coplot(mpg ~ amS | as.factor(cyl), data = mtcars,
         panel = panel.smooth, rows = 1)
 ```
+
 
 ```{r}
 coplot(mpg ~ gear | amS, data = mtcars,
         panel = panel.smooth, rows = 1)
 ```
 
+
 ```{r}
 spm(~ mpg + round(gear) | amS,data = mtcars,smoother=FALSE)
+
 ```
+
+## Quantifying the MPG difference between automatic and manual transmissions
 
